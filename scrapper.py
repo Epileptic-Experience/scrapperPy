@@ -55,7 +55,9 @@ def clave_producto(titulo):
     if not modelo or not capacidad:
         return None
 
-    return f"{modelo}_{capacidad}"
+    key = f"{modelo}_{capacidad}"
+    print(f"KEY: {key} for {titulo}")  # DEBUG
+    return key
 
 
 
@@ -86,6 +88,7 @@ def agrupar(productos):
 
 
 async def run_scrapper():
+    print("Starting scraper")
     resultados = []
 
     async with async_playwright() as p:
@@ -93,40 +96,44 @@ async def run_scrapper():
         page = await browser.new_page()
         
         for i in range(4):
-            offset = 48 * i
-            url = f"https://listado.mercadolibre.com.ar/celulares-telefonos/celulares-smartphones/apple/iphone-14_Desde_{offset + 1}_NoIndex_True"
+            try:
+                offset = 48 * i
+                url = f"https://listado.mercadolibre.com.ar/celulares-telefonos/celulares-smartphones/apple/iphone-14_Desde_{offset + 1}_NoIndex_True"
 
-            await page.goto(url)
-            await page.wait_for_load_state("networkidle")
+                await page.goto(url)
+                await page.wait_for_load_state("networkidle")
 
-            items = await page.query_selector_all("li.ui-search-layout__item")
-            print("ITEMS:", len(items))
-            for item in items:
-                title_el = await item.query_selector("h3")
-                price_el =  await item.query_selector(".andes-money-amount__fraction")
-                link_el = await item.query_selector("a")
-                link = None
-                if link_el:
-                    link = await link_el.get_attribute("href")
+                items = await page.query_selector_all("li.ui-search-layout__item")
+                print("ITEMS:", len(items))
+                for item in items:
+                    title_el = await item.query_selector("h3")
+                    price_el =  await item.query_selector(".andes-money-amount__fraction")
+                    link_el = await item.query_selector("a")
+                    link = None
+                    if link_el:
+                        link = await link_el.get_attribute("href")
 
-                if not title_el or not price_el:
-                    continue
+                    if not title_el or not price_el:
+                        continue
 
-                titulo_raw = await title_el.inner_text()
-                titulo = normalizar_titulo(titulo_raw)
-                
+                    titulo_raw = await title_el.inner_text()
+                    titulo = normalizar_titulo(titulo_raw)
+                    
 
-                if not titulo:
-                    continue
+                    if not titulo:
+                        continue
 
-                precio_texto = await price_el.inner_text()
-                precio = int(precio_texto.replace(".", ""))
+                    precio_texto = await price_el.inner_text()
+                    precio = int(precio_texto.replace(".", ""))
 
-                resultados.append({
-                    "titulo": titulo,
-                    "price": precio,
-                    "enlace":link
-                })
+                    resultados.append({
+                        "titulo": titulo,
+                        "price": precio,
+                        "enlace":link
+                    })
+            except Exception as e:
+                print(f"Error on page {i}: {e}")
+                continue
 
         await browser.close()
 

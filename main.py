@@ -2,6 +2,8 @@
 from fastapi import FastAPI
 from scrapper import run_scrapper
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import traceback
 
 app = FastAPI()
 
@@ -19,12 +21,6 @@ app.add_middleware(
 @app.get("/")
 def root():
     return{"status:": "Api funcionando"}
-
-from fastapi.responses import JSONResponse
-from fastapi import FastAPI
-import traceback
-
-app = FastAPI()
 
 @app.get("/scrape")
 async def scrape():
